@@ -1,10 +1,12 @@
 package main;
 
+import static org.lwjgl.opengl.GL11.*;
+
 import org.lwjgl.LWJGLException;
 import org.lwjgl.opengl.Display;
 import org.lwjgl.opengl.DisplayMode;
-
-import static org.lwjgl.opengl.GL11.*;
+import org.lwjgl.opengl.GL11;
+import org.lwjgl.util.glu.GLU;
 
 
 public class Renderer {
@@ -38,14 +40,15 @@ public class Renderer {
 		//glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
 		glMatrixMode(GL_PROJECTION);
 		glLoadIdentity();
-		//glOrtho(-width/100, width/100, -height/100, height/100, 100, 1);
-		glOrtho(-width/2, +width/2, 0, height, 0, 100);
-		//GLU.gluPerspective(60, width/(float)height, 1, 100);
-		//glFrustum(-Main.WIDTH, Main.WIDTH, -Main.HEIGHT, Main.HEIGHT, Main.FRONT_END, Main.BACK_END);
+//		glOrtho(-width/2, +width/2, -height/2, +height/2, 0, -1000);
+		glViewport(0, 0, width, height);
+		GLU.gluPerspective(45.0f,width/(float)height,0.1f,1000.0f);
+//		GLU.gluLookAt(50, 50, -50, 50, 50, 0, 0, 1, 0);
+//		glFrustum(-width/2, +width/2, -height/2, +height/2, 0, 1000);
 		glMatrixMode(GL_MODELVIEW);
 		glLoadIdentity();
 		glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
-		glViewport(0, 0, width, height);
+		glColor4f(0,0,0,1);
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 		glEnable(GL_DEPTH_TEST);
@@ -64,21 +67,80 @@ public class Renderer {
 	public static void closeWindow() {
 		Display.destroy();
 	}
+	
+	public static void renderClippingPlanes(){
+		glBegin(GL_QUADS);
+		
+		//Vorne
+		glColor4d(0, 0.5, 0.5, 0.5);
+		glVertex3d(-200, -112.5, 0);	//links unten nah
+		glVertex3d(+200, -112.5, 0);	//rechts unten nah
+		glVertex3d(+200, +112.5, 0);	//rechts oben nah
+		glVertex3d(-200, +112.5, 0);	//links oben nah
 
-	public static void renderWorld(GameWorld world, int x1start, int x1end, int x2start, int x2end, double stepsize) {
-		drawCube(0, 500, -5);
-		/*for(double x1=x1start; x1<x1end; x1+=stepsize){
-			glBegin(GL_LINE_STRIP);
-			for(double x2=x2start; x2<x2end; x2+=stepsize){
-				glVertex3d(x1, world.getHeight(x1, x2), x2);
+		glColor4d(0, 0, 0, 0.5);
+		glVertex3d(-200, -112.5, -100);	//links unten fern
+		glVertex3d(+200, -112.5, -100);	//rechts unten fern
+		glVertex3d(+200, +112.5, -100);	//rechts oben fern
+		glVertex3d(-200, +112.5, -100);	//links oben fern
+		glEnd();
+	}
+
+	public static void renderWorld(GameWorld world, int x1start, int x1end, int x2start, int x2end, double stepsize, double rot) {
+		glPushMatrix();
+//		glLoadIdentity();
+		//drawCube(0, 500, 50);
+		//GL11.glLineWidth(100);
+//		x1start = 50;
+//		x1end = 100;
+//		x2start = 0;
+//		x2end = 50;
+//		stepsize=50;
+//		int yOffset=500;
+		glTranslated(0, 0, -200);
+		glRotated(-15, 1, 0, 0);
+		glRotated(rot, 0, 1, 0);
+		glColor3d(0, 0, 0);
+		for(double x2=x2start; x2<x2end; x2+=stepsize){
+			glBegin(currMode=GL11.GL_LINES);
+			for(double x1=x1start; x1<x1end; x1+=stepsize){
+				renderEasyMesh(world, x2, x1, stepsize);
+//				glVertex3d(x2, world.getHeight(x1, x2), x1);
+//				glVertex3d(x2+stepsize, world.getHeight(x1, x2), x1);
+//				System.out.println(x2 +":"+ world.getHeight(x1, x2) +":"+ x1);
 			}
 			glEnd();
-		}*/
+		}
+//		renderClippingPlanes();
+		glPopMatrix();
+	}
+
+	
+	private static int currMode = 0;
+	private static void renderEasyMesh(GameWorld w, double x2, double x1, double step) {
+		double p1 = w.getHeight(x2, x1);
+		double p2 = w.getHeight(x2+step, x1);
+		double p3 = w.getHeight(x2, x1+step);
+		double p4 = w.getHeight(x2+step, x1+step);
+		
+		glVertex3d(x2+step, p2, x1);
+		
+		glVertex3d(x2, p1, x1);
+		
+		if(currMode == GL11.GL_LINES) {
+			glVertex3d(x2, p1, x1);
+		}
+		
+		glVertex3d(x2, p3, x1+step);
+		
+		if(currMode == GL11.GL_QUADS) {
+			glVertex3d(x2+step, p4, x1+step);
+		}
 	}
 	
 	private static final int halfLength=50;
 	private static void drawCube(float xOffset, float yOffset, float zOffset) {
-		glBegin(GL_QUADS);
+		glBegin(GL_LINE_LOOP);
 		//Vorne
 		glColor3f(1f, 1f, 0);
 		glVertex3d(xOffset-halfLength, yOffset-halfLength, zOffset+halfLength);	//links unten nah
