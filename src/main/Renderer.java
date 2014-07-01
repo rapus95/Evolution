@@ -11,6 +11,9 @@ import org.lwjgl.util.glu.GLU;
 
 public class Renderer {
 
+	private static final Vec3 lightVec = new Vec3(-1, -1, -1);
+	private static int list;
+	
 	public static void initWindow(int width, int height, String title){
 		/*try {
 			Display.setDisplayMode(new DisplayMode(width, height));
@@ -42,12 +45,12 @@ public class Renderer {
 		glLoadIdentity();
 //		glOrtho(-width/2, +width/2, -height/2, +height/2, 0, -1000);
 		glViewport(0, 0, width, height);
-		GLU.gluPerspective(45.0f,width/(float)height,0.1f,1000.0f);
+		GLU.gluPerspective(45.0f,width/(float)height,0.1f,5000.0f);
 //		GLU.gluLookAt(50, 50, -50, 50, 50, 0, 0, 1, 0);
 //		glFrustum(-width/2, +width/2, -height/2, +height/2, 0, 1000);
 		glMatrixMode(GL_MODELVIEW);
 		glLoadIdentity();
-		glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+		glClearColor(0.1f, 0.1f, 1.0f, 1.0f);
 		glColor4f(0,0,0,1);
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -65,6 +68,7 @@ public class Renderer {
 	}
 	
 	public static void closeWindow() {
+		GL11.glDeleteLists(list, 1);
 		Display.destroy();
 	}
 	
@@ -98,19 +102,26 @@ public class Renderer {
 //		stepsize=50;
 //		int yOffset=500;
 		glTranslated(0, 0, -200);
-		glRotated(-15, 1, 0, 0);
+		glRotated(15, 1, 0, 0);
 		glRotated(rot, 0, 1, 0);
+		glScaled(100, 100, 100);
 		glColor3d(0, 0, 0);
-		for(double x2=x2start; x2<x2end; x2+=stepsize){
-			glBegin(currMode=GL11.GL_LINES);
-			for(double x1=x1start; x1<x1end; x1+=stepsize){
-				renderEasyMesh(world, x2, x1, stepsize);
-//				glVertex3d(x2, world.getHeight(x1, x2), x1);
-//				glVertex3d(x2+stepsize, world.getHeight(x1, x2), x1);
-//				System.out.println(x2 +":"+ world.getHeight(x1, x2) +":"+ x1);
+		if(list==0){
+			list = GL11.glGenLists(1);
+			GL11.glNewList(list, GL11.GL_COMPILE);
+			for(double x2=x2start; x2<x2end; x2+=stepsize){
+				glBegin(currMode=GL11.GL_QUADS);
+				for(double x1=x1start; x1<x1end; x1+=stepsize){
+					renderEasyMesh(world, x2, x1, stepsize);
+//					glVertex3d(x2, world.getHeight(x1, x2), x1);
+//					glVertex3d(x2+stepsize, world.getHeight(x1, x2), x1);
+//					System.out.println(x2 +":"+ world.getHeight(x1, x2) +":"+ x1);
+				}
+				glEnd();
 			}
-			glEnd();
+			GL11.glEndList();
 		}
+		GL11.glCallList(list);
 //		renderClippingPlanes();
 		glPopMatrix();
 	}
@@ -123,6 +134,18 @@ public class Renderer {
 		double p3 = w.getHeight(x2, x1+step);
 		double p4 = w.getHeight(x2+step, x1+step);
 		
+		Vec3 v1 = new Vec3(x2, p1, x1);
+		Vec3 v2 = new Vec3(x2+step, p2, x1);
+		Vec3 v3 = new Vec3(x2, p3, x1+step);
+		v2 = v2.sub(v1);
+		v3 = v3.sub(v1);
+		v1 = v2.cross(v3).normalize();
+		double d = v1.dot(lightVec);
+		if(d<0){
+			d=0;
+		}
+		d = d*0.9+0.1;
+		glColor3d(d, d, d);
 		glVertex3d(x2+step, p2, x1);
 		
 		glVertex3d(x2, p1, x1);

@@ -3,11 +3,11 @@ package main;
 
 public class Evolution {
 
-	private static final int x1Start = -50;
-	private static final int x1End = 50;
-	private static final int x2Start = -100;
-	private static final int x2End = 100;
-	private static final double stepSize = 20;
+	private static final int x1Start = -10;
+	private static final int x1End = 10;
+	private static final int x2Start = -10;
+	private static final int x2End = 10;
+	private static final double stepSize = 0.01;
 	
 	private GameWorld world = new GameWorld();
 
@@ -24,7 +24,7 @@ public class Evolution {
 		while(!Renderer.updateWindow()){
 			Renderer.renderWorld(world, x1Start, x1End, x2Start, x2End, stepSize, rotation);
 			rotation=(rotation+.5)%360;
-			sleep(10);
+			//sleep(1);
 		}
 		Renderer.closeWindow();
 	}
